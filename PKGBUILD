@@ -13,20 +13,20 @@ pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
 _topver=7.3
 _patchlevel=251
 pkgver=3027
-pkgrel=1
+pkgrel=2
 arch=('i686' 'x86_64')
 license=('custom:vim')
 url="http://www.vim.org"
 makedepends=('gpm' 'perl' 'python2>=2.7.1' 'ruby' 'libxt' 'desktop-file-utils' 'gtk2'
              'gettext' 'pkgconfig' 'mercurial' 'rsync' 'sed')
 source=(pythoncomplete.vim::http://www.vim.org/scripts/download_script.php\?src_id=10872
-        vimrc archlinux.vim gvim.desktop breakindent-20101112-vim7.3-tmh.diff)
+        vimrc archlinux.vim gvim.desktop vim-7.3-breakindent-tmh.patch)
 
 md5sums=('6e7adfbd5d26c1d161030ec203a7f243'
          'e57777374891063b9ca48a1fe392ac05'
          '10353a61aadc3f276692d0e17db1478e'
          '4b83e5fe0e534c53daaba91dd1cd4cbb'
-         '2fb9f8e8b9a66d03bee18f9468f17687')
+         'f6e9a71a4d227ce0f27f3032e9b94040')
 
 _hgroot='http://vim.googlecode.com/hg/'
 _hgrepo='vim'
@@ -73,7 +73,7 @@ build() {
   (cd vim-build/src && autoconf)
 
   msg2 'Applying breakindent patch...'
-  patch -d vim-build -p1 <$srcdir/breakindent-20101112-vim7.3-tmh.diff
+  patch -d vim-build -p1 <$srcdir/vim-7.3-breakindent-tmh.patch
 
   msg2 'Building...'
 
