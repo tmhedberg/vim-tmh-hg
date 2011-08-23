@@ -1,6 +1,6 @@
 diff -r 7b50afd31037 runtime/doc/eval.txt
 --- a/runtime/doc/eval.txt	Fri Aug 19 22:29:02 2011 +0200
-+++ b/runtime/doc/eval.txt	Sat Aug 20 19:01:31 2011 -0400
++++ b/runtime/doc/eval.txt	Tue Aug 23 10:20:21 2011 -0400
 @@ -6208,8 +6208,8 @@
  keymap			Compiled with 'keymap' support.
  langmap			Compiled with 'langmap' support.
@@ -14,12 +14,12 @@ diff -r 7b50afd31037 runtime/doc/eval.txt
  			and the argument list |arglist|.
 diff -r 7b50afd31037 runtime/doc/options.txt
 --- a/runtime/doc/options.txt	Fri Aug 19 22:29:02 2011 +0200
-+++ b/runtime/doc/options.txt	Sat Aug 20 19:01:31 2011 -0400
++++ b/runtime/doc/options.txt	Tue Aug 23 10:20:21 2011 -0400
 @@ -1184,6 +1184,39 @@
  	break if 'linebreak' is on.  Only works for ASCII and also for 8-bit
  	characters when 'encoding' is an 8-bit encoding.
  
-+
++	
 +						*'breakindent'* *'bri'*
 +'breakindent' 'bri'	boolean (default off)
 +			local to window
@@ -73,9 +73,25 @@ diff -r 7b50afd31037 runtime/doc/options.txt
  	Note that <Tab> characters after an <EOL> are mostly not displayed
  	with the right amount of white space.
  
+diff -r 7b50afd31037 runtime/doc/tags
+--- a/runtime/doc/tags	Fri Aug 19 22:29:02 2011 +0200
++++ b/runtime/doc/tags	Tue Aug 23 10:20:21 2011 -0400
+@@ -90,6 +90,12 @@
+ 'bl'	options.txt	/*'bl'*
+ 'bomb'	options.txt	/*'bomb'*
+ 'breakat'	options.txt	/*'breakat'*
++'breakindent'	options.txt	/*'breakindent'*
++'breakindentmin'	options.txt	/*'breakindentmin'*
++'breakindentshift'	options.txt	/*'breakindentshift'*
++'bri'	options.txt	/*'bri'*
++'brimin'	options.txt	/*'brimin'*
++'brishift'	options.txt	/*'brishift'*
+ 'brk'	options.txt	/*'brk'*
+ 'browsedir'	options.txt	/*'browsedir'*
+ 'bs'	options.txt	/*'bs'*
 diff -r 7b50afd31037 runtime/optwin.vim
 --- a/runtime/optwin.vim	Fri Aug 19 22:29:02 2011 +0200
-+++ b/runtime/optwin.vim	Sat Aug 20 19:01:31 2011 -0400
++++ b/runtime/optwin.vim	Tue Aug 23 10:20:21 2011 -0400
 @@ -322,6 +322,15 @@
  call append("$", "linebreak\twrap long lines at a character in 'breakat'")
  call append("$", "\t(local to window)")
@@ -94,7 +110,7 @@ diff -r 7b50afd31037 runtime/optwin.vim
  call append("$", "showbreak\tstring to put before wrapped screen lines")
 diff -r 7b50afd31037 src/charset.c
 --- a/src/charset.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/charset.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/charset.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -846,24 +846,26 @@
   * taking into account the size of a tab.
   */
@@ -102,7 +118,7 @@ diff -r 7b50afd31037 src/charset.c
 -linetabsize(s)
 +linetabsize(s, lnum)
      char_u	*s;
-+    linenr_T    lnum;
++    linenr_T	lnum;
  {
 -    return linetabsize_col(0, s);
 +    return linetabsize_col(0, s, lnum);
@@ -116,7 +132,7 @@ diff -r 7b50afd31037 src/charset.c
 +linetabsize_col(startcol, s, lnum)
      int		startcol;
      char_u	*s;
-+    linenr_T    lnum;
++    linenr_T	lnum;
  {
      colnr_T	col = startcol;
  
@@ -275,7 +291,7 @@ diff -r 7b50afd31037 src/charset.c
  	    {
 diff -r 7b50afd31037 src/edit.c
 --- a/src/edit.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/edit.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/edit.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -398,7 +398,7 @@
  	if (startln)
  	    Insstart.col = 0;
@@ -299,7 +315,7 @@ diff -r 7b50afd31037 src/edit.c
  	}
  	Insstart = curwin->w_cursor;	/* new insertion starts here */
 -	Insstart_textlen = (colnr_T)linetabsize(ml_get_curline());
-+	Insstart_textlen = (colnr_T)linetabsize(ml_get_curline(),curwin->w_cursor.lnum);
++	Insstart_textlen = (colnr_T)linetabsize(ml_get_curline(), curwin->w_cursor.lnum);
  	ai_col = 0;
  #ifdef FEAT_VREPLACE
  	if (State & VREPLACE_FLAG)
@@ -351,19 +367,24 @@ diff -r 7b50afd31037 src/edit.c
  	ptr = prev_ptr;
 diff -r 7b50afd31037 src/eval.c
 --- a/src/eval.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/eval.c	Sat Aug 20 19:01:31 2011 -0400
-@@ -16991,7 +16991,7 @@
++++ b/src/eval.c	Tue Aug 23 10:20:21 2011 -0400
+@@ -16990,8 +16990,11 @@
+ 
      if (argvars[1].v_type != VAR_UNKNOWN)
  	col = get_tv_number(&argvars[1]);
- 
+-
 -    rettv->vval.v_number = (varnumber_T)(linetabsize_col(col, s) - col);
-+    rettv->vval.v_number = (varnumber_T)(linetabsize_col(col, s, 0 /* FIXME? */) - col);
++    /*
++     * FIXME: passing 0 as 3rd argument to linetabsize_col, instead of real line number;
++     * (can we get it from here somehow?); might give incorrect result with breakindent!
++     */
++    rettv->vval.v_number = (varnumber_T)(linetabsize_col(col, s, 0) - col); 
  }
  
  /*
 diff -r 7b50afd31037 src/ex_cmds.c
 --- a/src/ex_cmds.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/ex_cmds.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/ex_cmds.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -262,7 +262,7 @@
  	;
      save = *last;
@@ -375,7 +396,7 @@ diff -r 7b50afd31037 src/ex_cmds.c
      *last = save;
 diff -r 7b50afd31037 src/getchar.c
 --- a/src/getchar.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/getchar.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/getchar.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -2609,7 +2609,7 @@
  				    if (!vim_iswhite(ptr[col]))
  					curwin->w_wcol = vcol;
@@ -387,7 +408,7 @@ diff -r 7b50afd31037 src/getchar.c
  					col += (*mb_ptr2len)(ptr + col);
 diff -r 7b50afd31037 src/gui_beval.c
 --- a/src/gui_beval.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/gui_beval.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/gui_beval.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -335,7 +335,7 @@
  	{
  	    /* Not past end of the file. */
@@ -399,14 +420,14 @@ diff -r 7b50afd31037 src/gui_beval.c
  		if (getword)
 diff -r 7b50afd31037 src/misc1.c
 --- a/src/misc1.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/misc1.c	Sat Aug 20 19:01:31 2011 -0400
-@@ -451,6 +451,46 @@
++++ b/src/misc1.c	Tue Aug 23 10:20:21 2011 -0400
+@@ -451,6 +451,44 @@
      return (int)col;
  }
  
 +#ifdef FEAT_LINEBREAK
-+/*
-+ * Return appropriate space number for breakindent, taking influencing
++/* 
++ * Return appropriate space number for breakindent, taking influencing 
 + * parameters into account. Window must be specified, since it is not
 + * necessarily always the current one. If lnum==0, current line is calculated,
 + * specified line otherwise.
@@ -428,7 +449,7 @@ diff -r 7b50afd31037 src/misc1.c
 +    /* (this could be replaced by an equivalent call to win_col_off2()) */
 +    if (curwin->w_p_nu && vim_strchr(p_cpo, CPO_NUMCOL))
 +	bri += number_width(wp);
-+
++    
 +    /* never indent past left window margin */
 +    if (bri < 0)
 +	bri = 0;
@@ -439,15 +460,13 @@ diff -r 7b50afd31037 src/misc1.c
 +
 +    return bri;
 +}
-+
-+
-+
 +#endif
++
 +
  #if defined(FEAT_CINDENT) || defined(FEAT_SMARTINDENT)
  
  static int cin_is_cinword __ARGS((char_u *line));
-@@ -1757,7 +1797,7 @@
+@@ -1757,7 +1795,7 @@
      s = ml_get_buf(wp->w_buffer, lnum, FALSE);
      if (*s == NUL)		/* empty line */
  	return 1;
@@ -456,7 +475,7 @@ diff -r 7b50afd31037 src/misc1.c
  
      /*
       * If list mode is on, then the '$' at the end of the line may take up one
-@@ -1813,7 +1853,7 @@
+@@ -1813,7 +1851,7 @@
      col = 0;
      while (*s != NUL && --column >= 0)
      {
@@ -465,7 +484,7 @@ diff -r 7b50afd31037 src/misc1.c
  	mb_ptr_adv(s);
      }
  
-@@ -1825,7 +1865,7 @@
+@@ -1825,7 +1863,7 @@
       * 'ts') -- webb.
       */
      if (*s == TAB && (State & NORMAL) && (!wp->w_p_list || lcs_tab1))
@@ -474,7 +493,7 @@ diff -r 7b50afd31037 src/misc1.c
  
      /*
       * Add column offset for 'number', 'relativenumber', 'foldcolumn', etc.
-@@ -8503,7 +8543,7 @@
+@@ -8503,7 +8541,7 @@
  		amount = 0;
  		while (*that && col)
  		{
@@ -483,7 +502,7 @@ diff -r 7b50afd31037 src/misc1.c
  		    col--;
  		}
  
-@@ -8526,7 +8566,7 @@
+@@ -8526,7 +8564,7 @@
  
  		    while (vim_iswhite(*that))
  		    {
@@ -492,7 +511,7 @@ diff -r 7b50afd31037 src/misc1.c
  			++that;
  		    }
  
-@@ -8565,14 +8605,14 @@
+@@ -8565,14 +8603,14 @@
  				    --parencount;
  				if (*that == '\\' && *(that+1) != NUL)
  				    amount += lbr_chartabsize_adv(&that,
@@ -512,7 +531,7 @@ diff -r 7b50afd31037 src/misc1.c
  			if (!*that || *that == ';')
 diff -r 7b50afd31037 src/misc2.c
 --- a/src/misc2.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/misc2.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/misc2.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -166,7 +166,7 @@
  #ifdef FEAT_VIRTUALEDIT
  	    if ((addspaces || finetune) && !VIsual_active)
@@ -546,7 +565,7 @@ diff -r 7b50afd31037 src/misc2.c
  	}
 diff -r 7b50afd31037 src/normal.c
 --- a/src/normal.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/normal.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/normal.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -4438,7 +4438,7 @@
      int		dir;
      long	dist;
@@ -576,7 +595,7 @@ diff -r 7b50afd31037 src/normal.c
        }
 diff -r 7b50afd31037 src/ops.c
 --- a/src/ops.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/ops.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/ops.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -428,7 +428,7 @@
  	}
  	for ( ; vim_iswhite(*bd.textstart); )
@@ -651,7 +670,7 @@ diff -r 7b50afd31037 src/ops.c
  		    && char_count == byte_count)
 diff -r 7b50afd31037 src/option.c
 --- a/src/option.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/option.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/option.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -187,6 +187,11 @@
  #ifdef FEAT_ARABIC
  # define PV_ARAB	OPT_WIN(WV_ARAB)
@@ -664,35 +683,41 @@ diff -r 7b50afd31037 src/option.c
  #ifdef FEAT_DIFF
  # define PV_DIFF	OPT_WIN(WV_DIFF)
  #endif
-@@ -644,6 +649,27 @@
+@@ -644,6 +649,33 @@
  			    {(char_u *)0L, (char_u *)0L}
  #endif
  			    SCRIPTID_INIT},
 +    {"breakindent",   "bri",  P_BOOL|P_VI_DEF|P_VIM|P_RWIN,
 +#ifdef FEAT_LINEBREAK
 +			    (char_u *)VAR_WIN, PV_BRI,
++			    {(char_u *)FALSE, (char_u *)0L}
 +#else
 +			    (char_u *)NULL, PV_NONE,
++			    {(char_u *)0L, (char_u *)0L}
 +#endif
-+			    {(char_u *)FALSE, (char_u *)0L}},
++			    SCRIPTID_INIT},
 +    {"breakindentmin", "brimin", P_NUM|P_VI_DEF|P_VIM|P_RWIN,
 +#ifdef FEAT_LINEBREAK
 +			    (char_u *)VAR_WIN, PV_BRIMIN,
++			    {(char_u *)20L, (char_u *)20L}
 +#else
 +			    (char_u *)NULL, PV_NONE,
++			    {(char_u *)0L, (char_u *)0L}
 +#endif
-+			    {(char_u *)20L, (char_u *)20L}},
++			    SCRIPTID_INIT},
 +    {"breakindentshift", "brishift", P_NUM|P_VI_DEF|P_VIM|P_RWIN,
 +#ifdef FEAT_LINEBREAK
 +			    (char_u *)VAR_WIN, PV_BRISHIFT,
++			    {(char_u *)0L, (char_u *)0L}
 +#else
 +			    (char_u *)NULL, PV_NONE,
++			    {(char_u *)0L, (char_u *)0L}
 +#endif
-+			    {(char_u *)0L, (char_u *)0L}},
++			    SCRIPTID_INIT},
      {"browsedir",   "bsdir",P_STRING|P_VI_DEF,
  #ifdef FEAT_BROWSE
  			    (char_u *)&p_bsdir, PV_NONE,
-@@ -8339,6 +8365,16 @@
+@@ -8339,6 +8371,16 @@
  	}
  	curwin->w_nrwidth_line_count = 0;
      }
@@ -709,7 +734,7 @@ diff -r 7b50afd31037 src/option.c
  #endif
  
      else if (pp == &curbuf->b_p_tw)
-@@ -9575,6 +9611,9 @@
+@@ -9575,6 +9617,9 @@
  	case PV_WRAP:	return (char_u *)&(curwin->w_p_wrap);
  #ifdef FEAT_LINEBREAK
  	case PV_LBR:	return (char_u *)&(curwin->w_p_lbr);
@@ -719,7 +744,7 @@ diff -r 7b50afd31037 src/option.c
  #endif
  #ifdef FEAT_SCROLLBIND
  	case PV_SCBIND: return (char_u *)&(curwin->w_p_scb);
-@@ -9761,6 +9800,8 @@
+@@ -9761,6 +9806,8 @@
      to->wo_wrap = from->wo_wrap;
  #ifdef FEAT_LINEBREAK
      to->wo_lbr = from->wo_lbr;
@@ -730,7 +755,7 @@ diff -r 7b50afd31037 src/option.c
      to->wo_scb = from->wo_scb;
 diff -r 7b50afd31037 src/option.h
 --- a/src/option.h	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/option.h	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/option.h	Tue Aug 23 10:20:21 2011 -0400
 @@ -1044,6 +1044,11 @@
  #ifdef FEAT_CURSORBIND
      , WV_CRBIND
@@ -745,7 +770,7 @@ diff -r 7b50afd31037 src/option.h
  #endif
 diff -r 7b50afd31037 src/proto/charset.pro
 --- a/src/proto/charset.pro	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/proto/charset.pro	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/proto/charset.pro	Tue Aug 23 10:20:21 2011 -0400
 @@ -14,9 +14,9 @@
  int vim_strsize __ARGS((char_u *s));
  int vim_strnsize __ARGS((char_u *s, int len));
@@ -774,7 +799,7 @@ diff -r 7b50afd31037 src/proto/charset.pro
  colnr_T getvcol_nolist __ARGS((pos_T *posp));
 diff -r 7b50afd31037 src/proto/misc1.pro
 --- a/src/proto/misc1.pro	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/proto/misc1.pro	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/proto/misc1.pro	Tue Aug 23 10:20:21 2011 -0400
 @@ -5,6 +5,7 @@
  int get_indent_str __ARGS((char_u *ptr, int ts));
  int set_indent __ARGS((int size, int flags));
@@ -785,7 +810,7 @@ diff -r 7b50afd31037 src/proto/misc1.pro
  int plines __ARGS((linenr_T lnum));
 diff -r 7b50afd31037 src/regexp.c
 --- a/src/regexp.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/regexp.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/regexp.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -4269,7 +4269,7 @@
  		    if (top.col == MAXCOL || bot.col == MAXCOL)
  			end = MAXCOL;
@@ -806,7 +831,7 @@ diff -r 7b50afd31037 src/regexp.c
  
 diff -r 7b50afd31037 src/screen.c
 --- a/src/screen.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/screen.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/screen.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -2802,10 +2802,15 @@
  # define WL_SIGN	WL_FOLD		/* column for signs */
  #endif
@@ -838,12 +863,12 @@ diff -r 7b50afd31037 src/screen.c
  		}
  	    }
  
-+#ifdef FEAT_LINEBREAK
++#ifdef FEAT_LINEBREAK 
 +	    /* draw 'breakindent': indent wrapped text accordingly */
 +	    if (draw_state == WL_BRI -1 && n_extra == 0){
 +		draw_state = WL_BRI;
 +# ifdef FEAT_DIFF
-+		/* FIXME: handle (filler_todo > 0): or modify showbreak so that ---- vim/lines are shorter by the amount needed? */
++		/* FIXME: handle (filler_todo > 0): or modify showbreak so that ---- lines are shorter by the amount needed? */
 +# endif
 +		if (wp->w_p_bri && row != startrow){ /* FIXME: what is startrow? Don't we need it as well?? */
 +		    p_extra = NUL;
@@ -851,7 +876,7 @@ diff -r 7b50afd31037 src/screen.c
 +		    n_extra = get_breakindent_win(wp,lnum);
 +		    char_attr = 0; /* was: hl_attr(HLF_AT); */
 +		    /* FIXME: why do we need to adjust vcol if showbreak does not?? */
-+		    vcol += n_extra;
++		    // vcol += n_extra;
 +		    /* FIXME: is this relevant here? copied shamelessly from showbreak */
 +		    /* Correct end of highlighted area for 'breakindent',
 +		     * required when 'linebreak' is also set. */
@@ -860,7 +885,7 @@ diff -r 7b50afd31037 src/screen.c
 +		}
 +	    }
 +#endif
-+
++	    
 +
  #if defined(FEAT_LINEBREAK) || defined(FEAT_DIFF)
  	    if (draw_state == WL_SBR - 1 && n_extra == 0)
@@ -876,7 +901,7 @@ diff -r 7b50afd31037 src/screen.c
  			c = ' ';
 diff -r 7b50afd31037 src/structs.h
 --- a/src/structs.h	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/structs.h	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/structs.h	Tue Aug 23 10:20:21 2011 -0400
 @@ -133,6 +133,14 @@
      int		wo_arab;
  # define w_p_arab w_onebuf_opt.wo_arab	/* 'arabic' */
@@ -894,7 +919,7 @@ diff -r 7b50afd31037 src/structs.h
  # define w_p_diff w_onebuf_opt.wo_diff	/* 'diff' */
 diff -r 7b50afd31037 src/ui.c
 --- a/src/ui.c	Fri Aug 19 22:29:02 2011 +0200
-+++ b/src/ui.c	Sat Aug 20 19:01:31 2011 -0400
++++ b/src/ui.c	Tue Aug 23 10:20:21 2011 -0400
 @@ -3086,7 +3086,7 @@
      start = ptr = ml_get_buf(wp->w_buffer, lnum, FALSE);
      while (count <= vcol && *ptr != NUL)
