@@ -12,21 +12,22 @@ pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
 _topver=7.3
 _patchlevel=251
-pkgver=3136
-pkgrel=1
+pkgver=3153
+pkgrel=2
 arch=('i686' 'x86_64')
 license=('custom:vim')
 url="http://www.vim.org"
 makedepends=('gpm' 'perl' 'python2>=2.7.1' 'ruby' 'libxt' 'desktop-file-utils' 'gtk2'
              'gettext' 'pkgconfig' 'mercurial' 'rsync' 'sed')
 source=(pythoncomplete.vim::http://www.vim.org/scripts/download_script.php\?src_id=10872
-        vimrc archlinux.vim gvim.desktop vim-7.3-breakindent-tmh.patch)
+        vimrc archlinux.vim gvim.desktop vim-7.3-breakindent-tmh.patch vim_cursurlinenr.diff)
 
 md5sums=('6e7adfbd5d26c1d161030ec203a7f243'
          'e57777374891063b9ca48a1fe392ac05'
          '10353a61aadc3f276692d0e17db1478e'
          '4b83e5fe0e534c53daaba91dd1cd4cbb'
-         '98f15fcf003a50710116ae35ee42c485')
+         '98f15fcf003a50710116ae35ee42c485'
+         '9e76f5cdaf1a0164c44628ed7d3cf57a')
 
 _hgroot='http://vim.googlecode.com/hg/'
 _hgrepo='vim'
@@ -74,6 +75,9 @@ build() {
 
   msg2 'Applying breakindent patch...'
   patch -d vim-build -p1 <$srcdir/vim-7.3-breakindent-tmh.patch
+
+  msg2 'Applying CursorLineNr patch...'
+  patch -d vim-build -p1 <$srcdir/vim_cursurlinenr.diff
 
   msg2 'Building...'
 
