@@ -12,7 +12,7 @@ pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
 _topver=7.3
 _patchlevel=251
-pkgver=3428
+pkgver=3940
 pkgrel=1
 arch=('i686' 'x86_64')
 license=('custom:vim')
@@ -26,7 +26,7 @@ md5sums=('6e7adfbd5d26c1d161030ec203a7f243'
          'e57777374891063b9ca48a1fe392ac05'
          '10353a61aadc3f276692d0e17db1478e'
          '4b83e5fe0e534c53daaba91dd1cd4cbb'
-         '98f15fcf003a50710116ae35ee42c485')
+         'f64d88f11a287d0ded23b89df4e1697f')
 
 _hgroot='http://vim.googlecode.com/hg/'
 _hgrepo='vim'
