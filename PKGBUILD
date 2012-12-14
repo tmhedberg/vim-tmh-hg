@@ -12,8 +12,8 @@ pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
 _topver=7.3
 _patchlevel=251
-pkgver=3940
-pkgrel=1
+pkgver=4014
+pkgrel=3
 arch=('i686' 'x86_64')
 license=('custom:vim')
 url="http://www.vim.org"
@@ -67,10 +67,6 @@ build() {
     vim-build/src/feature.h
   sed -i 's|^.*\(#define VIMRC_FILE.*"\) .*$|\1|' \
     vim-build/src/feature.h
-  # fix python name
-  sed -i -e 's|vi_cv_path_python, python|vi_cv_path_python, python2|' \
-    vim-build/src/configure.in
-  (cd vim-build/src && autoconf)
 
   msg2 'Applying breakindent patch...'
   patch -d vim-build -p1 <$srcdir/vim-7.3-breakindent-tmh.patch
