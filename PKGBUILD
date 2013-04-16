@@ -12,15 +12,19 @@ pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
 _topver=7.3
 _patchlevel=251
-pkgver=4014
-pkgrel=3
+pkgrel=5
 arch=('i686' 'x86_64')
 license=('custom:vim')
 url="http://www.vim.org"
 makedepends=('gpm' 'perl' 'python2>=2.7.1' 'ruby' 'libxt' 'desktop-file-utils' 'gtk2'
              'gettext' 'pkgconfig' 'mercurial' 'rsync' 'sed')
+
+_hgrepo='vim'
+_hgroot='http://vim.googlecode.com/hg/'
+__hgbranch='default'
+
 source=(pythoncomplete.vim::http://www.vim.org/scripts/download_script.php\?src_id=10872
-        vimrc archlinux.vim gvim.desktop vim-7.3-breakindent-tmh.patch)
+        vimrc archlinux.vim gvim.desktop vim-7.3-breakindent-tmh.patch $_hgrepo::hg+$_hgroot#$_hgbranch)
 
 md5sums=('6e7adfbd5d26c1d161030ec203a7f243'
          'e57777374891063b9ca48a1fe392ac05'
@@ -28,11 +32,12 @@ md5sums=('6e7adfbd5d26c1d161030ec203a7f243'
          '4b83e5fe0e534c53daaba91dd1cd4cbb'
          'f64d88f11a287d0ded23b89df4e1697f')
 
-_hgroot='http://vim.googlecode.com/hg/'
-_hgrepo='vim'
-__hgbranch='default'
-
 _versiondir="vim${_topver//./}"
+
+pkgver() {
+  cd $_hgrepo
+  hg identify -ni | awk 'BEGIN{OFS=".";} {print $2,$1}'
+}
 
 ##### Build #####
 
@@ -41,14 +46,7 @@ build() {
 
   msg2 'Checking out source from Mercurial...'
 
-  if [[ -d ${_hgrepo} ]]; then
-    cd ${_hgrepo}
-    hg pull -u || warning 'hg pull failed!'
-  else
-    hg clone -b ${__hgbranch} "${_hgroot}${_hgrepo}" ${_hgrepo}
-    cd ${_hgrepo}
-  fi
-
+  cd $_hgrepo
   _hgid=`hg id -n`
   if (( ${_hgid%+} < $(hg id -nr ${__hgbranch}) )); then
     warning 'You are not building the latest revision!'
