@@ -12,7 +12,8 @@ pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
 _topver=7.3
 _patchlevel=251
-pkgrel=5
+pkgver=4312.ef341d8811b2
+pkgrel=1
 arch=('i686' 'x86_64')
 license=('custom:vim')
 url="http://www.vim.org"
@@ -24,19 +25,20 @@ _hgroot='http://vim.googlecode.com/hg/'
 __hgbranch='default'
 
 source=(pythoncomplete.vim::http://www.vim.org/scripts/download_script.php\?src_id=10872
-        vimrc archlinux.vim gvim.desktop vim-7.3-breakindent-tmh.patch $_hgrepo::hg+$_hgroot#$_hgbranch)
+        vimrc archlinux.vim gvim.desktop vim-7.3-breakindent-tmh.patch "$_hgrepo::hg+$_hgroot")
 
 md5sums=('6e7adfbd5d26c1d161030ec203a7f243'
          'e57777374891063b9ca48a1fe392ac05'
          '10353a61aadc3f276692d0e17db1478e'
          '4b83e5fe0e534c53daaba91dd1cd4cbb'
-         'f64d88f11a287d0ded23b89df4e1697f')
+         'f64d88f11a287d0ded23b89df4e1697f'
+         'SKIP')
 
 _versiondir="vim${_topver//./}"
 
-pkgver() {
+pkgver () {
   cd $_hgrepo
-  hg identify -ni | awk 'BEGIN{OFS=".";} {print $2,$1}'
+  echo `hg identify -n`.`hg identify -i`
 }
 
 ##### Build #####
