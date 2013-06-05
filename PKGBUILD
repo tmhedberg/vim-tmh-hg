@@ -12,7 +12,7 @@ pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
 _topver=7.3
 _patchlevel=251
-pkgver=4612.44ca4bc7d747
+pkgver=4737.c4bb9860b91e
 pkgrel=1
 arch=('i686' 'x86_64')
 license=('custom:vim')
@@ -25,13 +25,13 @@ _hgroot='http://vim.googlecode.com/hg/'
 __hgbranch='default'
 
 source=(pythoncomplete.vim::http://www.vim.org/scripts/download_script.php\?src_id=10872
-        vimrc archlinux.vim gvim.desktop breakindent3.patch "$_hgrepo::hg+$_hgroot")
+        vimrc archlinux.vim gvim.desktop breakindent.patch "$_hgrepo::hg+$_hgroot")
 
 md5sums=('6e7adfbd5d26c1d161030ec203a7f243'
          'e57777374891063b9ca48a1fe392ac05'
          '10353a61aadc3f276692d0e17db1478e'
          '4b83e5fe0e534c53daaba91dd1cd4cbb'
-         '4253c98ea5b819c7cfd70dbc00bb9ace'
+         '4c6afdc2cdef87f28983c2dfe28863f8'
          'SKIP')
 
 _versiondir="vim${_topver//./}"
@@ -69,7 +69,7 @@ build() {
     vim-build/src/feature.h
 
   msg2 'Applying breakindent patch...'
-  patch -d vim-build -p1 <$srcdir/breakindent3.patch
+  patch -d vim-build -p1 <$srcdir/breakindent.patch
 
   msg2 'Building...'
 
