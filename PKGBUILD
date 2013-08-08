@@ -10,7 +10,7 @@
 
 pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
-_topver=7.3
+_topver=7.4b
 _patchlevel=251
 pkgver=4737.c4bb9860b91e
 pkgrel=1
