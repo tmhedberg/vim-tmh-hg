@@ -10,9 +10,9 @@
 
 pkgbase=vim-tmh-hg
 pkgname=(vim-tmh-hg gvim-tmh-hg vim-runtime-tmh-hg)
-_topver=7.4b
+_topver=7.4
 _patchlevel=251
-pkgver=4737.c4bb9860b91e
+pkgver=5484.34a3b852ec05
 pkgrel=1
 arch=('i686' 'x86_64')
 license=('custom:vim')
